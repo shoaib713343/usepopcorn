@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { use, useEffect, useState } from "react";
 
 const tempMovieData = [
   {
@@ -50,19 +50,58 @@ const tempWatchedData = [
 const average = (arr) =>
   arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
 
+const KEY = "85ab0c7e";
 export default function App() {
-  const [movies, setMovies] = useState(tempMovieData);
-  const [watched, setWatched] = useState(tempWatchedData);
+  const [query, setQuery] = useState("");
+  const [movies, setMovies] = useState([]);
+  const [watched, setWatched] = useState([]);
+  const [isloading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const tempQuery = "fvfevefv";
+
+
+  useEffect(function () {
+    async function fetchMovie() {
+      try {
+        setIsLoading(true);
+        setError("");
+        const res = await fetch(
+          `http://www.omdbapi.com/?s=${query}&apikey=${KEY}`
+        );
+        if (!res.ok) {
+          throw new Error("Something went wrong fetching the movies");
+        }
+        const data = await res.json();
+        if (data.Response === "False") {
+          throw new Error("Movies not found");
+        }
+        setMovies(data.Search);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    if (!query.length<3) {
+      setMovies([]);
+      setError("");
+      return;
+    }
+    fetchMovie();
+  }, [query]);
 
   return (
     <>
       <NavBar movies={movies}>
-        <Search />
+        <Search query={query} setQuery={setQuery}/>
         <Numresults movies={movies} />
       </NavBar>
-      <Main movies={movies}>
-        <Box movies={movies}>
-          <MovieList movies={movies} />
+      <Main>
+        <Box>
+           {/* {isloading ? <Loader /> : <MovieList movies={movies} />} */}
+        {isloading && <Loader />}
+        {error && <ErrorMessage message={error} />}
+        {!isloading && !error && <MovieList movies={movies} />}
         </Box>
         <Box>
           <WatchedSummary watched={watched} />
@@ -73,6 +112,10 @@ export default function App() {
   );
 }
 
+function Loader() {
+  return <p className="loader">Loading...</p>;
+}
+
 function NavBar({ children }) {
   return (
     <nav className="nav-bar">
@@ -80,6 +123,12 @@ function NavBar({ children }) {
       {children}
     </nav>
   );
+}
+
+function ErrorMessage({message}) {
+  return <p className="error">
+    <span>😰</span>{message}
+  </p>;
 }
 
 function Logo() {
@@ -99,8 +148,8 @@ function Numresults({ movies }) {
   );
 }
 
-function Search() {
-  const [query, setQuery] = useState("");
+function Search({query, setQuery}) {
+  
   return (
     <input
       className="search"
@@ -121,10 +170,7 @@ function Box({ children }) {
 
   return (
     <div className="box">
-      <button
-        className="btn-toggle"
-        onClick={() => setIsOpen((open) => !open)}
-      >
+      <button className="btn-toggle" onClick={() => setIsOpen((open) => !open)}>
         {isOpen ? "–" : "+"}
       </button>
       {isOpen && children}
@@ -132,7 +178,8 @@ function Box({ children }) {
   );
 }
 
-{/*function WatchedBox() {
+{
+  /*function WatchedBox() {
   const [isOpen2, setIsOpen2] = useState(true);
   
 
@@ -151,7 +198,8 @@ function Box({ children }) {
       )}
     </div>
   );
-}*/}
+}*/
+}
 
 function MovieList({ movies }) {
   return (
@@ -177,8 +225,6 @@ function Movie({ movie }) {
     </li>
   );
 }
-
-
 
 function WatchedSummary({ watched }) {
   const avgImdbRating = average(watched.map((movie) => movie.imdbRating));
