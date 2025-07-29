@@ -82,6 +82,8 @@ export default function App() {
     });
   }
 
+  
+
   useEffect(
     function () {
       const controller = new AbortController();
@@ -105,7 +107,7 @@ export default function App() {
           setError("");
         } catch (err) {
           if(err.name === "AbortError") {
-            setError(err.message);
+            setError("");
             return;
           }
         } finally {
@@ -117,6 +119,7 @@ export default function App() {
         setError("");
         return;
       }
+      handleCloseMovie();
       fetchMovie();
 
       return function () {
@@ -319,6 +322,22 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
     onAddWatched(newWatchedMovie);
     onCloseMovie();
   }
+
+useEffect(() => {
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        onCloseMovie();
+      }
+    });
+
+    return () => {
+      document.removeEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          onCloseMovie();
+        }
+      });
+    }
+  }, [onCloseMovie]);
 
   useEffect(
     function () {
